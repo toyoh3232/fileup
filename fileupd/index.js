@@ -3,10 +3,12 @@ const multer = require("multer");
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const sanitize = require("sanitize-filename");
 
 const app = express();
 const port = 5432;
-const uploadpath = "uploads";
+const uploadpath = "./uploads/";
+const maxfilename = 255 - path.resolve(uploadpath).length - 36 - 1;
 const uuidpattern = /[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}/;
 
 const storage = multer.diskStorage({
@@ -15,8 +17,10 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         console.log(file);
-        if (path.join(uploadpath,file.originalname).length > 255)
-            cb (new Error("filename too long"), "if file name too long")
+        if (sanitize(file.originalname) !== file.originalname)
+            cb (new Error("filename contains illegal characters"), "illegal characters")
+        else if (path.join(uploadpath,file.originalname).length > 255)
+            cb (new Error(`filename is too long, must equal or less than ${maxfilename}`), "if file name too long")
         else
             cb(null, uuidv4() + file.originalname);
     }
@@ -29,13 +33,17 @@ const option = {
         fileSize: 4*1024*1024*1024,
         
     }};
-const uploader =  multer(option).single('file');
+const uploader = multer(option).single('file');
 
 app.get("/list", (req, res) => {
     fs.readdir(uploadpath, (err, files) => {
         if (err)
-            // TODO
-            console.log(err);
+            res.status(400).json({
+                meta: {
+                    msg: err.message,
+                    error: true,
+                    status: 400
+                }});
         else {
             res.status(200).json({data: files.reduce((acc, cur) => {
                 var indexes = uuidpattern.exec(cur);
@@ -48,7 +56,7 @@ app.get("/list", (req, res) => {
             },{}),
             meta: {
                 msg : "ok",
-                error : "false",
+                error : false,
                 status : 200
             }});
         }
@@ -59,7 +67,7 @@ app.get("/delete", (req, res) => {
     if (!req.query["uuid"]){
         return res.status(400).json({meta: {
             msg: "need parameter uuid",
-            error: "true",
+            error: true,
             status: 400
         }});
     }
@@ -67,20 +75,24 @@ app.get("/delete", (req, res) => {
     if (!uuid.match(uuidpattern)) {
         return res.status(400).json({meta: {
             msg: "error format uuid",
-            error: "true",
+            error: true,
             status: 400
         }});
     }
     fs.readdir(uploadpath, (err, files) => {
         if (err)
-            // TODO
-            console.log(err);
+            res.status(400).json({
+                meta: {
+                msg: err.message,
+                error: true,
+                status: 400
+            }});
         else {
             var filename = files.find(name => name.startsWith(uuid));
             if (!filename) {
                 res.status(400).json({meta: {
                     msg: "file not found",
-                    error: "true",
+                    error: true,
                     status: 400
                 }});
             } else {
@@ -90,14 +102,14 @@ app.get("/delete", (req, res) => {
                     if (err) {
                         res.status(400).json({meta: {
                             msg: "delete file error",
-                            error: "true",
+                            error: true,
                             status: 400
                         }});
                     }
                     else {
                         res.status(200).json({meta: {
                             msg: "ok",
-                            error: "false",
+                            error: false,
                             status: 200
                         }});
                     }
@@ -109,28 +121,22 @@ app.get("/delete", (req, res) => {
 
 app.post("/upload", (req, res) => {
     uploader(req, res, (err) => {
-        if (err instanceof multer.MulterError) {
+        if (err) {
             res.status(400).json({meta: {
                 msg: err.message,
-                error: "true",
-                status: 400
-            }});
-        } else if (err) {
-            res.status(400).json({meta: {
-                msg: err.message,
-                error: "true",
+                error: true,
                 status: 400
             }});
         } else if (!req.file) {
             res.status(400).json({meta: {
                 msg: "no multpart data",
-                error: "true",
+                error: true,
                 status: 400
             }});
         } else {
             res.status(200).json({meta: {
-                msg: "uploaded",
-                error: "false",
+                msg: "ok",
+                error: false,
                 status: 200
             }});
         }
