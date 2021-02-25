@@ -63,6 +63,38 @@ app.get("/list", (req, res) => {
     });
 });
 
+app.get("/listmore", (req, res) => {
+    fs.readdir(uploadpath, (err, files) => {
+        if (err)
+            res.status(400).json({
+                meta: {
+                    msg: err.message,
+                    error: true,
+                    status: 400
+                }});
+        else {
+            res.status(200).json({data: files.reduce((acc, cur) => {
+                var indexes = uuidpattern.exec(cur);
+                if (indexes && indexes.index == 0) {
+                    var uuid = cur.substr(0,36);
+                    var filename = cur.substr(36);
+                    acc[uuid] = {
+                        filename:filename, 
+                        updated_date: new Date(fs.statSync(path.join(uploadpath, cur)).birthtimeMs).toLocaleString()
+                    };
+                }
+                return acc;
+            },{}),
+            meta: {
+                msg : "ok",
+                error : false,
+                status : 200
+            }});
+        }
+    });
+});
+
+
 app.get("/delete", (req, res) => {
     if (!req.query["uuid"]){
         return res.status(400).json({meta: {

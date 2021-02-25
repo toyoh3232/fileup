@@ -1,0 +1,13 @@
+{
+  "name": "fileup-cli",
+  "version": "1.0.0",
+  "license": "MIT",
+  "bin": {
+    "fileup": "./cli.js"
+  },
+  "dependencies": {
+    "commander": "^7.1.0",
+    "enquirer": "^2.3.6",
+    "got": "^11.8.1"
+  }
+}
