@@ -20,14 +20,14 @@ const storage = multer.diskStorage({
     if (sanitize(file.originalname) !== file.originalname)
       cb(
         new Error("filename contains illegal characters"),
-        "illegal characters"
+        "if illegal characters exsits, this error arises"
       );
     else if (path.join(uploadpath, file.originalname).length > 255)
       cb(
         new Error(
           `filename is too long, must equal or less than ${maxfilename}`
         ),
-        "if file name too long"
+        "if file name too long, this error arises"
       );
     else cb(null, uuidv4() + file.originalname);
   },

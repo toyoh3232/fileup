@@ -2,6 +2,9 @@
 const { program } = require("commander");
 const got = require("got");
 const { Select } = require("enquirer");
+const FormData = require('form-data');
+const fs = require('fs/promises');
+const {createReadStream} = require('fs');
 
 const formatBytes = (bytes, decimals = 2) => {
   if (bytes === 0) return '0B';
@@ -89,7 +92,21 @@ program
   .command("upload <filename>")
   .description("upload file")
   .action((filename) => {
-    console.log("TODO");
+    fs.stat(filename).then(() => {
+      var form = new FormData();
+      form.append('file', createReadStream(filename));
+      return got(`http://127.0.0.1:54321/upload`, {
+        responseType: "json",
+        body: form,
+        method: "POST"
+      }).then(({ body }) => body.meta.msg);
+    })
+    .then(msg => {
+      console.log(msg);
+    })
+    .catch((err) => {
+      console.error(2, err.message);
+    });
   });
 
 program.parse(process.argv);
