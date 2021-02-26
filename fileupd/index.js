@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require("uuid");
 const sanitize = require("sanitize-filename");
 
 const app = express();
-const port = 5432;
+const port = 54321;
 const uploadpath = "./uploads/";
 const maxfilename = 255 - path.resolve(uploadpath).length - 36 - 1;
 const uuidpattern = /[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}/;
@@ -61,13 +61,16 @@ app.get("/list", (req, res) => {
             var filename = cur.substr(36);
             if (req.query["filename"] && req.query["filename"] !== filename)
               return acc;
-            if (req.query["detailed"] === "true")
+            if (req.query["detailed"] === "true"){
+            var stat = fs.statSync(path.join(uploadpath, cur));
               acc[uuid] = {
                 filename: filename,
                 uploaddate: new Date(
-                  fs.statSync(path.join(uploadpath, cur)).birthtimeMs
+                  stat.birthtimeMs
                 ).toLocaleString(),
+                size: stat.size
               };
+            }
             else acc[uuid] = filename;
           }
           return acc;

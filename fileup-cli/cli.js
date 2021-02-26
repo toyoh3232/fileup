@@ -3,22 +3,37 @@ const { program } = require("commander");
 const got = require("got");
 const { Select } = require("enquirer");
 
+const formatBytes = (bytes, decimals = 2) => {
+  if (bytes === 0) return '0B';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'K', 'M', 'G', 'T'];
+
+  var i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + sizes[i];
+};
+
 program.version("0.0.1");
 
 program
   .command("list")
   .description("list all uploaded files")
   .action(() => {
-    got("http://127.0.0.1:5432/list?detailed=true", { responseType: "json" })
+    got("http://127.0.0.1:54321/list?detailed=true", { responseType: "json" })
       .then(({ body }) => {
         if (body.meta.error) {
           console.log(body.meta.msg);
         } else {
+          console.log();
           for (uuid in body.data) {
+            var stat = body.data[uuid]
             console.log(
-              `${body.data[uuid].uploaddate} ${body.data[uuid].filename}`
+              `${stat.uploaddate} ${formatBytes(stat.size).padStart(8, ' ')} ${stat.filename}`
             );
           }
+          console.log(`${Object.keys(body.data).length} file(s)`);
         }
       })
       .catch((err) => {
@@ -30,7 +45,7 @@ program
   .command("delete <filename>")
   .description("delete file")
   .action((filename) => {
-    got(`http://127.0.0.1:5432/list?detailed=true&filename=${filename}`, {
+    got(`http://127.0.0.1:54321/list?detailed=true&filename=${filename}`, {
       responseType: "json",
     })
       .then(({ body }) => {
@@ -38,6 +53,9 @@ program
         if (Object.keys(body.data).length == 0) throw "error: file not found";
         if (Object.keys(body.data).length == 1)
           return Object.keys(body.data)[0];
+        // if more than 1 file is with the this filename
+        // promot to selection
+        console.log(`\nOops, more than one '${filename}' exists.\n`);
         var choices = [];
         for (uuid in body.data) {
           choices.push({
@@ -47,7 +65,7 @@ program
         }
         var prompt = new Select({
           message:
-            "Oops, we have many files with the same name. which do you want to delete?",
+            "which do you want to delete?",
           choices: choices,
         });
         return prompt
@@ -55,7 +73,7 @@ program
           .then((answer) => choices.find((x) => x.name === answer).value);
       })
       .then((uuid) => {
-        return got(`http://127.0.0.1:5432/delete?uuid=${uuid}`, {
+        return got(`http://127.0.0.1:54321/delete?uuid=${uuid}`, {
           responseType: "json",
         }).then(({ body }) => body.meta.msg);
       })
@@ -65,6 +83,13 @@ program
       .catch((err) => {
         console.error(err);
       });
+  });
+
+  program
+  .command("upload <filename>")
+  .description("upload file")
+  .action((filename) => {
+    console.log("TODO");
   });
 
 program.parse(process.argv);
