@@ -29,14 +29,13 @@ program
         if (body.meta.error) {
           console.log(body.meta.msg);
         } else {
-          console.log();
+          console.log(`total ${Object.keys(body.data).length} file(s)`);
           for (uuid in body.data) {
             var stat = body.data[uuid]
             console.log(
               `${stat.uploaddate} ${formatBytes(stat.size).padStart(8, ' ')} ${stat.filename}`
             );
           }
-          console.log(`${Object.keys(body.data).length} file(s)`);
         }
       })
       .catch((err) => {
