@@ -1,10 +1,10 @@
 {
   "name": "fileup-cli",
   "version": "1.0.0",
-  "license": "MIT",
   "bin": {
     "fileup": "./cli.js"
   },
+  "author": "Toyoharu Han",
   "dependencies": {
     "commander": "^7.1.0",
     "enquirer": "^2.3.6",

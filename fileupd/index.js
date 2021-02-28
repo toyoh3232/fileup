@@ -4,8 +4,12 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const sanitize = require("sanitize-filename");
+const cors = require('cors')
+const moment = require('moment');
 
 const app = express();
+app.use(cors());
+
 const port = 54321;
 const uploadpath = "./uploads/";
 const maxfilename = 255 - path.resolve(uploadpath).length - 36 - 1;
@@ -46,6 +50,7 @@ app.get("/list", (req, res) => {
   fs.readdir(uploadpath, (err, files) => {
     if (err)
       res.status(400).json({
+        data:[],
         meta: {
           msg: `error: ${err.message}`,
           error: true,
@@ -63,18 +68,18 @@ app.get("/list", (req, res) => {
               return acc;
             if (req.query["detailed"] === "true"){
             var stat = fs.statSync(path.join(uploadpath, cur));
-              acc[uuid] = {
+              acc.push( {
+                id: uuid,
                 filename: filename,
-                uploaddate: new Date(
-                  stat.birthtimeMs
-                ).toLocaleString(),
+                uploaddate: 
+                  moment(stat.birthtime).format("MM/DD/YYYY hh:mm:ss"),
                 size: stat.size
-              };
+              });
             }
-            else acc[uuid] = filename;
+            else acc.push( {id:uuid, filename: filename});
           }
           return acc;
-        }, {}),
+        }, []),
         meta: {
           msg: "ok",
           error: false,
@@ -88,6 +93,7 @@ app.get("/list", (req, res) => {
 app.get("/delete", (req, res) => {
   if (!req.query["uuid"]) {
     return res.status(400).json({
+      data: [],
       meta: {
         msg: "error: need parameter uuid",
         error: true,
@@ -98,6 +104,7 @@ app.get("/delete", (req, res) => {
   var uuid = req.query["uuid"];
   if (!uuid.match(uuidpattern)) {
     return res.status(400).json({
+      data: [],
       meta: {
         msg: "error: invalid format uuid",
         error: true,
@@ -108,6 +115,7 @@ app.get("/delete", (req, res) => {
   fs.readdir(uploadpath, (err, files) => {
     if (err)
       res.status(400).json({
+        data: [],
         meta: {
           msg: `error: ${err.message}`,
           error: true,
@@ -118,6 +126,7 @@ app.get("/delete", (req, res) => {
       var filename = files.find((name) => name.startsWith(uuid));
       if (!filename) {
         res.status(400).json({
+          data: [],
           meta: {
             msg: "error: file not found",
             error: true,
@@ -130,6 +139,7 @@ app.get("/delete", (req, res) => {
         fs.rename(fullname, newfullname, (err) => {
           if (err) {
             res.status(400).json({
+              data: [],
               meta: {
                 msg: "error: deletion failed",
                 error: true,
@@ -138,8 +148,9 @@ app.get("/delete", (req, res) => {
             });
           } else {
             res.status(200).json({
+              data: [],
               meta: {
-                msg: "ok",
+                msg: "1 file deleted.",
                 error: false,
                 status: 200,
               },
@@ -155,6 +166,7 @@ app.post("/upload", (req, res) => {
   uploader(req, res, (err) => {
     if (err) {
       res.status(400).json({
+        data: [],
         meta: {
           msg: err.message,
           error: true,
@@ -163,6 +175,7 @@ app.post("/upload", (req, res) => {
       });
     } else if (!req.file) {
       res.status(400).json({
+        data: [],
         meta: {
           msg: "no multpart data",
           error: true,
@@ -171,8 +184,9 @@ app.post("/upload", (req, res) => {
       });
     } else {
       res.status(200).json({
+        data: [],
         meta: {
-          msg: "ok",
+          msg: "1 file is uploaded successfully.",
           error: false,
           status: 200,
         },

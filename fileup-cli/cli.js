@@ -29,11 +29,10 @@ program
         if (body.meta.error) {
           console.log(body.meta.msg);
         } else {
-          console.log(`total ${Object.keys(body.data).length} file(s)`);
-          for (uuid in body.data) {
-            var stat = body.data[uuid]
+          console.log(`total ${body.data.length} file(s)`);
+          for (file of body.data) {
             console.log(
-              `${stat.uploaddate} ${formatBytes(stat.size).padStart(8, ' ')} ${stat.filename}`
+              `${file.uploaddate} ${formatBytes(file.size).padStart(8, ' ')} ${file.filename}`
             );
           }
         }
@@ -52,17 +51,17 @@ program
     })
       .then(({ body }) => {
         if (body.meta.error) throw body.meta.msg;
-        if (Object.keys(body.data).length == 0) throw "error: file not found";
-        if (Object.keys(body.data).length == 1)
-          return Object.keys(body.data)[0];
+        if (body.data.length == 0) throw "error: file not found";
+        if (body.data.length == 1)
+          return body.data[0];
         // if more than 1 file is with the this filename
-        // promot to selection
+        // prompt to selection
         console.log(`\nOops, more than one '${filename}' exists.\n`);
         var choices = [];
-        for (uuid in body.data) {
+        for (file of body.data) {
           choices.push({
-            name: `${body.data[uuid].filename} upload at ${body.data[uuid].uploaddate}`,
-            value: uuid,
+            name: `${file.filename} uploaded at ${file.uploaddate}`,
+            value: file.id,
           });
         }
         var prompt = new Select({
@@ -104,7 +103,7 @@ program
       console.log(msg);
     })
     .catch((err) => {
-      console.error(2, err.message);
+      console.error(err.message);
     });
   });
 
