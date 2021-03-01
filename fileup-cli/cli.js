@@ -19,6 +19,8 @@ const formatBytes = (bytes, decimals = 2) => {
 };
 
 program.version("0.0.1");
+program.name("fileup");
+program.description("File Upload/Delete Commandline Client");
 
 program
   .command("list")

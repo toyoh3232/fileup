@@ -1,0 +1,13 @@
+{
+  "name": "fileup-all",
+  "version": "1.0.0",
+  "description": "simple file upload/delete client & server, coding challenge solution for job application to Woven Planet Group",
+  "scripts": {
+    "preserver": "cd fileupd&& npm install",
+    "server": "cd fileupd&&npm test",
+    "preclient-cli": "cd fileup-cli && npm install",
+    "client-web": "cd fileup-web && elm-app start",
+    "client-cli": "cd fileup-cli && npm link && fileup"
+  },
+  "author": "Toyoharu Han"
+}
