@@ -40,7 +40,7 @@ type alias Stat =
 type alias ResponseResult = (Stat, Files)
 
 type Model
-  = Failure Http.Error
+  = Failure String
   | Loading
   | Success ResponseResult
 
@@ -69,24 +69,54 @@ update msg model =
       (model, uploadFile file)
     Listed result ->
       case result of
-        Ok fileResult ->
-          (Success fileResult, Cmd.none)
+        Ok (stat, files) ->
+          if stat.error then (Failure stat.msg, Cmd.none) else (Success (stat, files), Cmd.none)
         Err err ->
-          (Failure err, Cmd.none)
+          case err of 
+            Http.BadUrl url ->
+              (Failure url, Cmd.none)
+            Http.Timeout ->
+              (Failure "Request Timeout", Cmd.none)
+            Http.NetworkError ->
+              (Failure "Network Error", Cmd.none)
+            Http.BadStatus code ->
+              (Failure ("Bad Status" ++ String.fromInt code), Cmd.none)
+            Http.BadBody body ->
+              (Failure body, Cmd.none)
     DeleteRequested id ->
           (model, deleteFile id)
     Deleted result ->
       case result of
-        Ok _ ->
-          (model, listFile)
+        Ok (stat, files) ->
+          if stat.error then (Success (stat, files), Cmd.none) else (model, listFile)
         Err err ->
-          (Failure err, Cmd.none)
+          case err of 
+            Http.BadUrl url ->
+              (Failure url, Cmd.none)
+            Http.Timeout ->
+              (Failure "Request Timeout", Cmd.none)
+            Http.NetworkError ->
+              (Failure "Network Error", Cmd.none)
+            Http.BadStatus code ->
+              (Failure ("Bad Status" ++ String.fromInt code), Cmd.none)
+            Http.BadBody body ->
+              (Failure body, Cmd.none)
     Uploaded result ->
       case result of
-        Ok _ ->
-          (model, listFile)
+        Ok (stat, files) ->
+          if stat.error then (Success (stat, files), Cmd.none) else (model, listFile)
         Err err ->
-          (Failure err, Cmd.none)
+          case err of 
+            Http.BadUrl url ->
+              (Failure url, Cmd.none)
+            Http.Timeout ->
+              (Failure "Request Timeout", Cmd.none)
+            Http.NetworkError ->
+              (Failure "Network Error", Cmd.none)
+            Http.BadStatus code ->
+              (Failure ("Bad Status" ++ String.fromInt code), Cmd.none)
+            Http.BadBody body ->
+              (Failure body, Cmd.none)
 
 -- VIEW
 view : Model -> Html Msg
@@ -94,7 +124,10 @@ view model =
   div []
     [h2 [] [ text "File Uploader - Web" ]
     , h3 [] [text "Upload"]
-    ,button [ onClick UploadRequest] [text "Upload..."]
+    , button [ onClick UploadRequest] [text "Upload..."]
+    , h3 [] [ text "Files" ]
+    , div [] [button [type_ "button", onClick (ListRequested)] [ text "Refresh files"]]
+    , br [] []
     , viewFiles model
 
     ]
@@ -102,17 +135,14 @@ view model =
 viewFiles : Model -> Html Msg
 viewFiles model =
   case model of
-    Failure _ ->
-      div [] [text "error"]
+    Failure msg ->
+      div [] [text msg]
     Loading ->
       div []
-        [text "Loading..."]
+        [text "Loading files..."]
 
     Success (_, files) ->
-        div []
-           [ h3 [] [ text "Files" ]
-           , div [] [button [type_ "button", onClick (ListRequested)] [ text "Refresh files"]]
-           , div [] 
+        div [] [ div [] 
              [
                table [] (viewTableHeader:: List.map viewFile files)
              ]
