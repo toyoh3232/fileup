@@ -5,6 +5,15 @@ const { Select } = require("enquirer");
 const FormData = require('form-data');
 const fs = require('fs/promises');
 const {createReadStream} = require('fs');
+const process = require('process');
+
+if (!process.env.FILEUPSERVER) {
+  console.log("error: environment variable FILEUPSERVER is not set");
+  process.exit(1);
+}
+const serveraddr = process.env.FILEUPSERVER.trimEnd('/') + '/'
+
+
 
 const formatBytes = (bytes, decimals = 2) => {
   if (bytes === 0) return '0B';
@@ -26,7 +35,7 @@ program
   .command("list")
   .description("list all uploaded files")
   .action(() => {
-    got("http://127.0.0.1:54321/list?detailed=true", { responseType: "json" })
+    got(`${serveraddr}list?detailed=true`, { responseType: "json" })
       .then(({ body }) => {
         if (body.meta.error) {
           console.log(body.meta.msg);
@@ -40,7 +49,7 @@ program
         }
       })
       .catch((err) => {
-        console.log(err);
+        console.log(`error: ${err.message}`);
       });
   });
 
@@ -48,7 +57,7 @@ program
   .command("delete <filename>")
   .description("delete file")
   .action((filename) => {
-    got(`http://127.0.0.1:54321/list?detailed=true&filename=${filename}`, {
+    got(`${serveraddr}list?detailed=true&filename=${filename}`, {
       responseType: "json",
     })
       .then(({ body }) => {
@@ -76,7 +85,7 @@ program
           .then((answer) => choices.find((x) => x.name === answer).value);
       })
       .then((uuid) => {
-        return got(`http://127.0.0.1:54321/delete?uuid=${uuid}`, {
+        return got(`${serveraddr}delete?uuid=${uuid}`, {
           responseType: "json",
         }).then(({ body }) => body.meta.msg);
       })
@@ -84,7 +93,7 @@ program
         console.log(msg);
       })
       .catch((err) => {
-        console.error(err);
+        console.log(`error: ${err.message}`);
       });
   });
 
@@ -95,7 +104,7 @@ program
     fs.stat(filename).then(() => {
       var form = new FormData();
       form.append('file', createReadStream(filename));
-      return got(`http://127.0.0.1:54321/upload`, {
+      return got(`${serveraddr}upload`, {
         responseType: "json",
         body: form,
         method: "POST"
@@ -105,7 +114,7 @@ program
       console.log(msg);
     })
     .catch((err) => {
-      console.error(err.message);
+      console.log(`error: ${err.message}`);
     });
   });
 

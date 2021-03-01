@@ -6,7 +6,10 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode exposing (Decoder, int, string, bool, field, map2, map3, map4)
-
+import Http exposing (fileBody)
+import File as F
+import File.Select as Select
+import Config exposing (..)
 -- MAIN
 main : Program () Model Msg
 main =
@@ -34,46 +37,51 @@ type alias Stat =
       code : Int
     }
 
-type alias FileResult = (Stat, Files)
+type alias ResponseResult = (Stat, Files)
 
 type Model
   = Failure Http.Error
   | Loading
-  | Success FileResult
-
+  | Success ResponseResult
 
 init : () -> (Model, Cmd Msg)
 init _ = (Loading, listFile)
 
-
-
 -- UPDATE
-
-
 type Msg
-  = Refresh
-  | GetFileList (Result Http.Error FileResult)
-  | DeleteFile String
-  | FileDeleted (Result Http.Error FileResult)
+  = ListRequested
+  | Listed (Result Http.Error ResponseResult)
+  | DeleteRequested String
+  | Deleted (Result Http.Error ResponseResult)
+  | UploadRequest
+  | FileSelected F.File
+  | Uploaded (Result Http.Error ResponseResult)
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Refresh ->
+    ListRequested ->
       (Loading, listFile)
-
-    GetFileList result ->
+    UploadRequest ->
+      (model, Select.file [] FileSelected)
+    FileSelected  file->
+      (model, uploadFile file)
+    Listed result ->
       case result of
         Ok fileResult ->
           (Success fileResult, Cmd.none)
         Err err ->
           (Failure err, Cmd.none)
-
-    DeleteFile id ->
+    DeleteRequested id ->
           (model, deleteFile id)
-
-    FileDeleted result ->
+    Deleted result ->
+      case result of
+        Ok _ ->
+          (model, listFile)
+        Err err ->
+          (Failure err, Cmd.none)
+    Uploaded result ->
       case result of
         Ok _ ->
           (model, listFile)
@@ -86,11 +94,10 @@ view model =
   div []
     [h2 [] [ text "File Uploader - Web" ]
     , h3 [] [text "Upload"]
-    ,input [ type_ "file" ] []
+    ,button [ onClick UploadRequest] [text "Upload..."]
     , viewFiles model
 
     ]
-
 
 viewFiles : Model -> Html Msg
 viewFiles model =
@@ -100,10 +107,11 @@ viewFiles model =
     Loading ->
       div []
         [text "Loading..."]
+
     Success (_, files) ->
         div []
            [ h3 [] [ text "Files" ]
-           , div [] [button [type_ "button", onClick (Refresh)] [ text "Refresh files"]]
+           , div [] [button [type_ "button", onClick (ListRequested)] [ text "Refresh files"]]
            , div [] 
              [
                table [] (viewTableHeader:: List.map viewFile files)
@@ -121,7 +129,6 @@ viewTableHeader =
             [ text "Uploaded Date" ]
         ]
 
-
 viewFile : File -> Html Msg
 viewFile file =
     tr []
@@ -133,21 +140,20 @@ viewFile file =
             [ text file.date ]
         , td []
             [
-               button [ type_ "button", onClick (DeleteFile file.id) ]
+               button [ type_ "button", onClick (DeleteRequested file.id) ]
                 [ text "Delete" ]
             ]
         ]
+
 -- HTTP
-
-
 deleteFile : String -> Cmd Msg
 deleteFile id =
     Http.request
         { method = "GET"
         , headers = []
-        , url = "http://127.0.0.1:54321/delete?uuid=" ++ id
+        , url = Config.endpoint ++ "delete?uuid=" ++ id
         , body = Http.emptyBody
-        , expect = Http.expectJson FileDeleted fileResultDecoder
+        , expect = Http.expectJson Deleted resultDecoder
         , timeout = Nothing
         , tracker = Nothing
         }
@@ -155,9 +161,18 @@ deleteFile id =
 listFile : Cmd Msg
 listFile =
   Http.get
-    { url = "http://127.0.0.1:54321/list?detailed=true"
-    , expect = Http.expectJson GetFileList fileResultDecoder
+    { url = Config.endpoint ++ "list?detailed=true"
+    , expect = Http.expectJson Listed resultDecoder
     }
+
+
+uploadFile : F.File -> Cmd Msg
+uploadFile file =
+  Http.post
+  { url = Config.endpoint ++ "upload"
+  , body = Http.multipartBody [Http.filePart "file" file]
+  , expect =  Http.expectJson Uploaded resultDecoder
+  }
 
 
 statDecoder: Decoder Stat
@@ -176,8 +191,8 @@ fileDecoder =
     (field "uploaddate" string)
 
 
-fileResultDecoder : Decoder FileResult
-fileResultDecoder = 
+resultDecoder : Decoder ResponseResult
+resultDecoder = 
   map2 Tuple.pair
   (field "meta" statDecoder)
   (field "data" (Json.Decode.list fileDecoder))

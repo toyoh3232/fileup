@@ -1,6 +1,7 @@
 {
   "name": "fileup-cli",
   "version": "1.0.0",
+  "description": "simple file uploader - client side",
   "bin": {
     "fileup": "./cli.js"
   },
