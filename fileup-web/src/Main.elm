@@ -184,7 +184,7 @@ viewTableHeader =
         , th []
             [text "Size"]
         , th []
-            [ text "Uploaded Date" ]
+            [ text "Uploaded Date (on Server)" ]
         ]
 
 viewFile : File -> Html Msg

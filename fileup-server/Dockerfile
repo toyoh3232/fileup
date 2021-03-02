@@ -1,9 +1,9 @@
 FROM node:14
 
-ENV http_proxy http://proxy.toshiba.co.jp:8080
-ENV https_proxy http://proxy.toshiba.co.jp:8080
+ENV FILEUPSAVEDIR "/var/fileup"
 
-ENV FILEUPSAVEDIR "/tmp/fileup/upload"
+# ENV http_proxy 
+# ENV https_proxy
 
 # Create app directory
 WORKDIR /usr/src/fileup-server

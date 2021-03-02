@@ -12,7 +12,7 @@ app.use(cors());
 
 const host = '0.0.0.0';
 const port = 54321;
-const uploadpath = "./uploads";
+var uploadpath = "./uploads";
 if (process.env.FILEUPSAVEDIR)
   uploadpath = path.join(process.env.FILEUPSAVEDIR, "./");
 

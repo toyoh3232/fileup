@@ -9,18 +9,17 @@ The server and web based client could be installed by Docker in one step.
 ### fileup-server
 
 ```bash
-cd fileup-server
-docker build -t toyoh3232/fileup-web
+docker build -t toyoh3232/fileup-server ./fileup-server
 docker run -p 54321:54321 -d fileup-server
 ```
 
 ### fileup-web
 
 ```bash
-cd fileup-web
-docker build -t toyoh3232/fileup-web
-docker run -p 54322:8080 -d fileup-server
+docker build -t toyoh3232/fileup-web ./fileup-web
+docker run -p 54322:8080 -d fileup-web
 ```
+Now you could open a browser and type http://127.0.0.1:54322 and start testing it in production mode.
 
 If you machine is behind a proxy, make sure http_proxy and https_proxy enviroment variables are set correctly in Dockerfile.
 
@@ -82,7 +81,7 @@ Now a global symlink for this package is installed in the global node_modules fo
 Your could run the command *fileup* without reinstallation when the file *cli.js* si modified.
 
 ```bash
-FILEUPSERVER=http://127.0.0.1:54321 fileup
+fileup
 Usage: fileup [options] [command]
 
 File Upload/Delete Commandline Client
@@ -97,5 +96,8 @@ Commands:
   upload <filename>  upload file
   help [command]     display help for command
 ```
+## Acknowledgement
 
+ Thank you for checking my code. I apologize that I did not share many comments on my code, which is not a good practice on real project and the implementation is still not so robust.
+ I am not an expert on the front side but if you have any question, please feel free to contact me.
  
