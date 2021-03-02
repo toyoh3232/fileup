@@ -81,6 +81,7 @@ Now a global symlink for this package is installed in the global node_modules fo
 Your could run the command *fileup* without reinstallation when the file *cli.js* si modified.
 
 ```bash
+export FILEUPSERVER=http://127.0.0.1:54321 
 fileup
 Usage: fileup [options] [command]
 
@@ -98,6 +99,6 @@ Commands:
 ```
 ## Acknowledgement
 
- Thank you for checking my code. I apologize that I did not share many comments on my code, which is not a good practice on real project and the implementation is still not so robust.
+ Thank you for checking my code. I apologize that I did not write enough comments on my code, which is not a good practice on real project and the implementation is still not so robust.
  I am not an expert on the front side but if you have any question, please feel free to contact me.
- 
+
