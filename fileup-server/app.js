@@ -12,7 +12,10 @@ app.use(cors());
 
 const host = '0.0.0.0';
 const port = 54321;
-const uploadpath = path.join(process.env.FILEUPSAVEDIR, "./");
+const uploadpath = "./uploads";
+if (process.env.FILEUPSAVEDIR)
+  uploadpath = path.join(process.env.FILEUPSAVEDIR, "./");
+
 const maxfilename = 255 - path.resolve(uploadpath).length - 36 - 1;
 const uuidpattern = /[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}/;
 
