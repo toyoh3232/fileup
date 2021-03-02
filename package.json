@@ -6,8 +6,7 @@
     "preserver": "cd fileup-server && npm install",
     "server": "cd fileup-server && npm test",
     "precli": "cd fileup-cli && npm install",
-    "web": "cd fileup-web && elm-app start",
-    "cli": "cd fileup-cli && npm link && fileup"
+    "web": "cd fileup-web && elm-app start"
   },
   "author": "Toyoharu Han"
 }

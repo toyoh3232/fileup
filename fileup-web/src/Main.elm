@@ -6,7 +6,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode exposing (Decoder, int, string, bool, field, map2, map3, map4)
-import Http exposing (fileBody)
+import Http
 import File as F
 import File.Select as Select
 import Config exposing (..)
@@ -39,17 +39,25 @@ type alias Stat =
 
 type alias ResponseResult = (Stat, Files)
 
-type Model
+type ModelState
   = Failure String
+  | Initializing 
   | Loading
   | Success ResponseResult
 
+type alias Model =
+    { server : String
+    , state : ModelState
+    }
+
 init : () -> (Model, Cmd Msg)
-init _ = (Loading, listFile)
+init _ = ({server="", state=Initializing}, Cmd.none)
 
 -- UPDATE
 type Msg
-  = ListRequested
+  = ResetRequested
+  | TextChangeRequested String
+  | ListRequested
   | Listed (Result Http.Error ResponseResult)
   | DeleteRequested String
   | Deleted (Result Http.Error ResponseResult)
@@ -61,92 +69,112 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    ResetRequested ->
+      ({server="", state=Initializing}, Cmd.none)
+    TextChangeRequested serveraddr ->
+      ({server=serveraddr, state=model.state}, Cmd.none)
     ListRequested ->
-      (Loading, listFile)
+      ({server=model.server, state=Loading}, listFile model.server)
     UploadRequest ->
       (model, Select.file [] FileSelected)
     FileSelected  file->
-      (model, uploadFile file)
+      (model, uploadFile model.server file)
     Listed result ->
       case result of
         Ok (stat, files) ->
-          if stat.error then (Failure stat.msg, Cmd.none) else (Success (stat, files), Cmd.none)
+          if stat.error then ({server=model.server, state=Failure stat.msg}, Cmd.none) 
+          else ({server=model.server, state= Success (stat, files)}, Cmd.none)
         Err err ->
           case err of 
             Http.BadUrl url ->
-              (Failure url, Cmd.none)
+              ({server=model.server, state=Failure url}, Cmd.none)
             Http.Timeout ->
-              (Failure "Request Timeout", Cmd.none)
+              ({server=model.server, state=Failure "Request Timeout"}, Cmd.none)
             Http.NetworkError ->
-              (Failure "Network Error", Cmd.none)
+              ({server=model.server, state=Failure "Network Error"}, Cmd.none)
             Http.BadStatus code ->
-              (Failure ("Bad Status" ++ String.fromInt code), Cmd.none)
+              ({server=model.server, state=Failure ("Bad Status" ++ String.fromInt code)}, Cmd.none)
             Http.BadBody body ->
-              (Failure body, Cmd.none)
+              ({server=model.server, state=Failure body}, Cmd.none)
     DeleteRequested id ->
-          (model, deleteFile id)
+          (model, deleteFile model.server id)
     Deleted result ->
       case result of
-        Ok (stat, files) ->
-          if stat.error then (Success (stat, files), Cmd.none) else (model, listFile)
+        Ok (stat, _) ->
+          if stat.error then ({server=model.server, state=Failure stat.msg}, Cmd.none) 
+          else (model, listFile model.server)
         Err err ->
           case err of 
             Http.BadUrl url ->
-              (Failure url, Cmd.none)
+              ({server=model.server, state=Failure url}, Cmd.none)
             Http.Timeout ->
-              (Failure "Request Timeout", Cmd.none)
+              ({server=model.server, state=Failure "Request Timeout"}, Cmd.none)
             Http.NetworkError ->
-              (Failure "Network Error", Cmd.none)
+              ({server=model.server, state=Failure "Network Error"}, Cmd.none)
             Http.BadStatus code ->
-              (Failure ("Bad Status" ++ String.fromInt code), Cmd.none)
+              ({server=model.server, state=Failure ("Bad Status" ++ String.fromInt code)}, Cmd.none)
             Http.BadBody body ->
-              (Failure body, Cmd.none)
+              ({server=model.server, state=Failure body}, Cmd.none)
     Uploaded result ->
       case result of
-        Ok (stat, files) ->
-          if stat.error then (Success (stat, files), Cmd.none) else (model, listFile)
+        Ok (stat, _) ->
+          if stat.error 
+          then ({server=model.server, state=Failure stat.msg}, Cmd.none) 
+          else ({server=model.server, state=Loading}, listFile model.server)
         Err err ->
           case err of 
             Http.BadUrl url ->
-              (Failure url, Cmd.none)
+              ({server=model.server, state=Failure url}, Cmd.none)
             Http.Timeout ->
-              (Failure "Request Timeout", Cmd.none)
+              ({server=model.server, state=Failure "Request Timeout"}, Cmd.none)
             Http.NetworkError ->
-              (Failure "Network Error", Cmd.none)
+              ({server=model.server, state=Failure "Network Error"}, Cmd.none)
             Http.BadStatus code ->
-              (Failure ("Bad Status" ++ String.fromInt code), Cmd.none)
-            Http.BadBody body ->
-              (Failure body, Cmd.none)
+              ({server=model.server, state=Failure ("Bad Status" ++ String.fromInt code)}, Cmd.none)
+            Http.BadBody _ ->
+              ({server=model.server, state=Failure "Bad body"}, Cmd.none)
 
 -- VIEW
 view : Model -> Html Msg
 view model =
   div []
     [h2 [] [ text "File Uploader - Web" ]
-    , h3 [] [text "Upload"]
-    , button [ onClick UploadRequest] [text "Upload..."]
-    , h3 [] [ text "Files" ]
-    , div [] [button [type_ "button", onClick (ListRequested)] [ text "Refresh files"]]
-    , br [] []
-    , viewFiles model
-
+    , if model.state == Initializing 
+      then div [] 
+      [ label [] [text "Server Address: "]
+      , input [ placeholder "127.0.0.1:54321",value model.server, onInput TextChangeRequested] []
+      , button [type_ "button", onClick (ListRequested)] [ text "Connect"]
+      ]
+      else viewControls model
     ]
 
-viewFiles : Model -> Html Msg
-viewFiles model =
-  case model of
+viewControls : Model -> Html Msg
+viewControls model =
+ case model.state of
+    Initializing ->
+      div [] []
     Failure msg ->
-      div [] [text msg]
+      div [] 
+      [ label [] [text (msg ++ " on server "++ model.server)]
+      , button [type_ "button", onClick (ResetRequested)] [ text "Reset"]
+      ]
     Loading ->
-      div []
-        [text "Loading files..."]
+      div [] [text "Loading ..."]
+    Success (_, files) -> 
+      div [] 
+        [ h3 [] [text "Upload"]
+        , button [ onClick UploadRequest] [text "Upload..."]
+        , h3 [] [ text "Files" ]
+        , div [] [button [type_ "button", onClick (ListRequested)] [ text "Refresh files"]]
+        , br [] []
+        , viewFiles files
+        , label [] [text ("On server http://"++ model.server)
+        , button [type_ "button", onClick (ResetRequested)] [ text "Reset"]]
+        ]
 
-    Success (_, files) ->
-        div [] [ div [] 
-             [
-               table [] (viewTableHeader:: List.map viewFile files)
-             ]
-           ]
+viewFiles : Files -> Html Msg
+viewFiles files = div [] [ table [] (viewTableHeader:: List.map viewFile files)]
+
 
 viewTableHeader : Html Msg
 viewTableHeader =
@@ -176,30 +204,30 @@ viewFile file =
         ]
 
 -- HTTP
-deleteFile : String -> Cmd Msg
-deleteFile id =
+deleteFile : String -> String -> Cmd Msg
+deleteFile server id =
     Http.request
         { method = "GET"
         , headers = []
-        , url = Config.endpoint ++ "delete?uuid=" ++ id
+        , url = "http://" ++ server ++ "/delete?uuid=" ++ id
         , body = Http.emptyBody
         , expect = Http.expectJson Deleted resultDecoder
         , timeout = Nothing
         , tracker = Nothing
         }
 
-listFile : Cmd Msg
-listFile =
+listFile : String -> Cmd Msg
+listFile server =
   Http.get
-    { url = Config.endpoint ++ "list?detailed=true"
+    { url = "http://" ++ server ++ "/list?detailed=true"
     , expect = Http.expectJson Listed resultDecoder
     }
 
 
-uploadFile : F.File -> Cmd Msg
-uploadFile file =
+uploadFile : String -> F.File -> Cmd Msg
+uploadFile server file =
   Http.post
-  { url = Config.endpoint ++ "upload"
+  { url = "http://" ++ server++ "/upload"
   , body = Http.multipartBody [Http.filePart "file" file]
   , expect =  Http.expectJson Uploaded resultDecoder
   }

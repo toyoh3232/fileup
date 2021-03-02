@@ -41,3 +41,7 @@ td:last-child {
   border :none;
   background-color: #ffffff;
 }
+
+button {
+  margin-left: 10px;
+}

@@ -6,21 +6,29 @@ const { v4: uuidv4 } = require("uuid");
 const sanitize = require("sanitize-filename");
 const cors = require('cors')
 const moment = require('moment');
-
+const process = require('process');
 const app = express();
 app.use(cors());
 
+const host = '0.0.0.0';
 const port = 54321;
-const uploadpath = "./uploads/";
+const uploadpath = path.join(process.env.FILEUPSAVEDIR, "./");
 const maxfilename = 255 - path.resolve(uploadpath).length - 36 - 1;
 const uuidpattern = /[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}/;
+
+// create the directory to store files if not exist
+try {
+  fs.mkdirSync(uploadpath,{recursive: true});
+} catch (err) {
+  console.log(`error: ${err.message}`);
+  process.exit(1);
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadpath);
   },
   filename: (req, file, cb) => {
-    console.log(file);
     if (sanitize(file.originalname) !== file.originalname)
       cb(
         new Error("filename contains illegal characters"),
@@ -195,6 +203,7 @@ app.post("/upload", (req, res) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`listen on ${port}`);
+app.listen(port, host, () => {
+  console.log(`listen on http://${host}:${port}`);
+  console.log(`file uploaded save into ${uploadpath}`);
 });
