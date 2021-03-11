@@ -9,31 +9,32 @@ The server and web based client could be installed by Docker in one step.
 ### fileup-server
 
 ```bash
-docker build -t toyoh3232/fileup-server ./fileup-server
-docker run -p 54321:54321 -d fileup-server
+docker build -t toyoharu/fileup-server ./fileup-server
+docker run -p 54321:54321 -d toyoharu/fileup-server
 ```
 
 ### fileup-web
 
 ```bash
-docker build -t toyoh3232/fileup-web ./fileup-web
-docker run -p 54322:8080 -d fileup-web
+docker build -t toyoharu/fileup-web ./fileup-web
+docker run -p 54322:8080 -d toyoharu/fileup-web
 ```
 Now you could open a browser and type http://127.0.0.1:54322 and start testing it in production mode.
 
-If you machine is behind a proxy, make sure http_proxy and https_proxy enviroment variables are set correctly in Dockerfile.
+If you machine is behind a proxy, make sure *http_proxy* and *https_proxy* enviroment variables are set correctly in Dockerfile.
 
 ### fileup-cli
 
 The commandline based client is just a nodejs package with. you could install it by:
 
 ```bash
-npm install -g ./fileup-cli
+npm install -g ./fileup-cli/packed/fileup-cli-1.0.1.tgz
 ```
 Now the command fileup is in your PATH, you could simply type it in the terminal then it will show you the usage.
 
 ```bash
-FILEUPSERVER=http://127.0.0.1:54321 fileup
+export FILEUPSERVER=127.0.0.1:54321
+fileup
 Usage: fileup [options] [command]
 
 File Upload/Delete Commandline Client
@@ -53,7 +54,7 @@ Notice that the enviroment variable FILEUPSERVER should be set before calling th
 
 ## Development & Test
 
-You should have the following tools.
+You should have the following tools the in system envitoment.
 
 
 - npm >= 7.6.0
@@ -75,13 +76,14 @@ Sorry for that I did not provide a .env solution for a better config management 
 The test of the commandline based client is under the help of npm-link.
 ```bash
 cd fileup-cli
+npm install
 npm link
 ```
 Now a global symlink for this package is installed in the global node_modules folder.
 Your could run the command *fileup* without reinstallation when the file *cli.js* si modified.
 
 ```bash
-export FILEUPSERVER=http://127.0.0.1:54321 
+export FILEUPSERVER=127.0.0.1:54321 
 fileup
 Usage: fileup [options] [command]
 

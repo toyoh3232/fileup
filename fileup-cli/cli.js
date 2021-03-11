@@ -11,8 +11,10 @@ if (!process.env.FILEUPSERVER) {
   console.log("error: environment variable FILEUPSERVER is not set");
   process.exit(1);
 }
-const serveraddr = process.env.FILEUPSERVER.trimEnd('/') + '/'
+var serveraddr =  process.env.FILEUPSERVER.trimStart().trimEnd();
 
+if (!serveraddr.startsWith("http://")) serveraddr = "http://" + serveraddr;
+if (!serveraddr.endsWith("/")) serveraddr = serveraddr + "/";
 
 
 const formatBytes = (bytes, decimals = 2) => {
@@ -62,9 +64,9 @@ program
     })
       .then(({ body }) => {
         if (body.meta.error) throw body.meta.msg;
-        if (body.data.length == 0) throw "error: file not found";
+        if (body.data.length == 0) throw {message:"error: file not found"};
         if (body.data.length == 1)
-          return body.data[0];
+          return body.data[0].id;
         // if more than 1 file is with the this filename
         // prompt to selection
         console.log(`\nOops, more than one '${filename}' exists.\n`);
