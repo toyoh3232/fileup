@@ -9,7 +9,7 @@ import Json.Decode exposing (Decoder, int, string, bool, field, map2, map3, map4
 import Http
 import File as F
 import File.Select as Select
-import Config exposing (..)
+
 -- MAIN
 main : Program () Model Msg
 main =
