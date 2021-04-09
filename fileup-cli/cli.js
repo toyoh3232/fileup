@@ -63,8 +63,8 @@ program
       responseType: "json",
     })
       .then(({ body }) => {
-        if (body.meta.error) throw body.meta.msg;
-        if (body.data.length == 0) throw {message:"error: file not found"};
+        if (body.meta.error) throw {message: body.meta.msg};
+        if (body.data.length == 0) throw {message: "file not found"};
         if (body.data.length == 1)
           return body.data[0].id;
         // if more than 1 file is with the this filename
